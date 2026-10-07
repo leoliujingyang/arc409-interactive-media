@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="author" content="Jingyang Liu, Ph.D." />
+  <title>FLEX CODE Living Identity V5</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app" id="app">
+
+    <header class="bar">
+      <div class="brand">
+        <strong>FLEX<i>/</i>CODE</strong>
+        <span>Living Identity 05</span>
+      </div>
+      <div class="bar-mid">
+        <b>Interactive media</b>
+        <span id="barStatus"></span>
+      </div>
+      <div class="bar-right">
+        <div class="pair" role="group" aria-label="History">
+          <button class="btn" id="undoBtn" title="Undo the last change (Ctrl or Cmd Z)">Undo</button>
+          <button class="btn" id="redoBtn" title="Redo (Shift with Ctrl or Cmd Z)">Redo</button>
+        </div>
+        <button class="btn" id="pauseBtn" title="Freeze or resume the poster (P)">Pause</button>
+        <div class="seg mode" id="modeSeg" role="group" aria-label="Mode">
+          <button data-v="design" title="Edit the poster and its rules">Design</button>
+          <button data-v="live" title="Full stage for performing (Space)">Perform</button>
+        </div>
+        <button class="btn accent" id="mutateBtn" title="A new arrangement of the same elements (M)">Mutate</button>
+      </div>
+    </header>
+
+    <aside class="panel left">
+      <section>
+        <header class="sec"><span>01</span><h2>Sense</h2></header>
+        <div class="seg" id="sourceSeg">
+          <button data-v="camera" title="Track yourself through the camera">Camera</button>
+          <button data-v="pointer" title="Your pointer plays the hand">Pointer</button>
+        </div>
+        <div class="sense-view" id="senseView">
+          <video id="cam" playsinline muted></video>
+          <canvas id="senseCanvas" width="640" height="480"></canvas>
+          <div class="sense-cap" id="senseCap"></div>
+        </div>
+        <div class="lab">Track</div>
+        <div class="trackers" id="trackers"></div>
+      </section>
+
+      <section>
+        <header class="sec"><span>02</span><h2>Signals</h2></header>
+        <p class="hint first">Everything the trackers can read, live<br />Press the plus on one to make a rule from it</p>
+        <div id="signals"></div>
+      </section>
+
+      <footer class="credit">
+        <img src="assets/xjtlu-design-school.png" alt="XJTLU Design School" width="720" height="86" />
+        <span>Jingyang Liu, Ph.D.</span>
+      </footer>
+    </aside>
+
+    <main class="stage" id="stage">
+      <div class="stage-meta">
+        <span id="metaLeft"></span>
+        <span class="status" id="status"></span>
+        <span id="metaRight"></span>
+      </div>
+      <div class="board" id="board"><canvas id="poster" width="800" height="1000"></canvas></div>
+      <div class="stage-foot">
+        <div class="foot-group">
+          <button class="tog small" id="mirrorTog" title="Show where the tracked points are on the poster">Show body</button>
+        </div>
+        <div class="foot-group">
+          <select id="frameSel" aria-label="What to save" title="Save the poster alone, or the camera scene beside it">
+            <option value="poster">Poster</option>
+            <option value="both">Camera and poster</option>
+          </select>
+          <select class="dur" aria-label="Clip length" title="Length of a GIF or video"></select>
+          <div class="seg small" id="saveSeg">
+            <button data-v="png" title="Still image at double size">PNG</button>
+            <button data-v="gif" title="Records what you perform as a looping GIF">GIF</button>
+            <button data-v="video" title="Records what you perform (R)">Video</button>
+          </div>
+        </div>
+      </div>
+      <div class="credit live-credit">
+        <img src="assets/xjtlu-design-school.png" alt="XJTLU Design School" width="720" height="86" />
+        <span>Jingyang Liu, Ph.D.</span>
+      </div>
+      <div class="live-note">Perform <span>R records a video, Esc returns to Design</span></div>
+    </main>
+
+    <aside class="panel right">
+      <nav class="tabs three" id="mainTabs">
+        <button data-tab="rules">Rules</button>
+        <button data-tab="elements">Elements</button>
+        <button data-tab="poster">Poster</button>
+      </nav>
+
+      <div class="pane" data-pane="rules">
+        <div class="pad">
+          <div class="lab first">Start from a suggestion</div>
+          <div class="recipes" id="recipes"></div>
+          <div class="lab">Rules <span id="ruleCount"></span></div>
+          <div class="rules" id="rules"></div>
+          <button class="btn wide" id="addRule">Add a rule</button>
+        </div>
+      </div>
+
+      <div class="pane" data-pane="elements">
+        <div class="pad">
+          <div class="add-row">
+            <button id="addText">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v3h-1.4V6.6h-4.4v11h1.8V19H9v-1.4h1.8v-11H6.4V8H5z"/></svg>
+              <span>Text</span>
+            </button>
+            <button id="addShape">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="M11 11h9v9h-9z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+              <span>Shape</span>
+            </button>
+            <label>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4 17l5-6 4 4 3-3 4 5v2H4z"/></svg>
+              <span>Image</span>
+              <input type="file" id="imageInput" accept="image/*" />
+            </label>
+          </div>
+          <div class="layers" id="layers"></div>
+          <p class="hint" id="noSel">Select an element on the poster or in the list to edit it</p>
+        </div>
+
+        <div id="sel" hidden>
+          <header class="insp-head">
+            <span class="num" id="selNum">01</span>
+            <input id="selName" aria-label="Element name" spellcheck="false" />
+            <button class="mini" id="dupBtn" title="Duplicate">Copy</button>
+            <button class="mini" id="delBtn" title="Delete">Delete</button>
+          </header>
+          <nav class="tabs three" id="tabs">
+            <button data-tab="form">Form</button>
+            <button data-tab="style">Style</button>
+            <button data-tab="echo">Echo</button>
+          </nav>
+
+          <div class="tab-body" data-tab="form">
+            <div id="formText">
+              <label class="lab">Content<textarea id="textContent" rows="3" spellcheck="false"></textarea></label>
+              <div class="row2">
+                <label class="lab">Typeface
+                  <select data-bind="el.fontFamily">
+                    <option value="sans">Sans</option><option value="narrow">Narrow</option>
+                    <option value="serif">Serif</option><option value="mono">Mono</option>
+                  </select>
+                </label>
+                <label class="lab">Weight
+                  <select data-bind="el.fontWeight">
+                    <option value="400">Regular</option><option value="500">Medium</option><option value="600">Semibold</option>
+                    <option value="800">Bold</option><option value="900">Black</option>
+                  </select>
+                </label>
+              </div>
+              <div class="field" data-bind="el.tracking" data-label="Tracking" data-lo="tight" data-hi="wide"></div>
+              <div class="field" data-bind="el.gapRhythm" data-label="Gap rhythm" data-lo="even" data-hi="uneven"></div>
+              <div class="togs">
+                <button class="tog" data-bind="el.rule">Rules in gaps</button>
+                <button class="tog" data-bind="el.justify">Justify lines</button>
+              </div>
+            </div>
+
+            <div id="formGeo">
+              <div class="lab">Geometry <span id="pointCount"></span></div>
+              <div class="shape-grid" id="shapeGrid"></div>
+              <div class="togs">
+                <button class="tog" data-bind="el.smooth">Smooth</button>
+                <div class="seg" id="styleSeg" data-bind="el.style" data-options="fill:Fill,line:Line"></div>
+              </div>
+              <div class="field" id="weightField" data-bind="el.weight" data-label="Line weight" data-min="0.01" data-max="0.5"></div>
+              <p class="hint">Drag a square point to reshape, drag a round midpoint to add a point, double click a point to remove it</p>
+              <label class="btn wide file" id="replaceWrap">Replace image<input type="file" id="replaceInput" accept="image/*" /></label>
+            </div>
+
+            <div class="field" data-bind="el.size" data-label="Size" data-min="0.01" data-max="0.6" data-step="0.002"></div>
+            <div class="field" data-bind="el.rotation" data-label="Rotation" data-min="-180" data-max="180" data-step="1" data-fmt="deg"></div>
+            <div class="lab">Role</div>
+            <div class="seg" data-bind="el.role" data-options="anchor:Anchor,content:Content,accent:Accent"></div>
+            <button class="btn wide" id="homeBtn">Return to grammar</button>
+          </div>
+
+          <div class="tab-body" data-tab="style">
+            <div id="paintBlock">
+              <div class="lab">Paint</div>
+              <div class="seg" id="paintSeg" data-bind="el.paint" data-options="solid:Solid,gradient:Gradient,outline:Outline"></div>
+              <div class="lab">Colour</div>
+              <div class="swatches" id="swatches"></div>
+              <div class="lab">Second colour</div>
+              <div class="swatches" id="swatches2"></div>
+              <div class="field" id="angleField" data-bind="el.gradAngle" data-label="Gradient angle" data-min="0" data-max="360" data-step="1" data-fmt="deg"></div>
+              <div class="field" id="outlineField" data-bind="el.outline" data-label="Outline weight" data-min="0.01" data-max="0.12" data-step="0.002"></div>
+              <div class="field" data-bind="el.shift" data-label="Colour motion" data-lo="fixed" data-hi="flowing"></div>
+            </div>
+            <div id="letterBlock">
+              <div class="lab">Letters</div>
+              <div class="field first" data-bind="el.wave" data-label="Letter wave" data-lo="flat" data-hi="rolling"></div>
+              <div class="field" data-bind="el.depth" data-label="Depth" data-lo="flat" data-hi="deep"></div>
+              <p class="hint">Depth is drawn in the second colour and leans away from the tracked hand or face</p>
+            </div>
+            <div class="field" data-bind="el.opacity" data-label="Opacity" data-min="0.05" data-max="1"></div>
+          </div>
+
+          <div class="tab-body" data-tab="echo">
+            <p class="hint">Copies replay what the first one did a moment earlier, so a moving hand leaves a trail of them</p>
+            <div class="field" data-bind="ec.count" data-label="Copies" data-min="1" data-max="12" data-step="1" data-fmt="int"></div>
+            <div class="field" data-bind="ec.gap" data-label="Spacing" data-lo="stacked" data-hi="wide"></div>
+            <div class="field" data-bind="ec.angle" data-label="Direction" data-min="0" data-max="360" data-step="1" data-fmt="deg"></div>
+            <div class="field" data-bind="ec.lag" data-label="Lag" data-lo="together" data-hi="trailing"></div>
+            <div class="field" data-bind="ec.fade" data-label="Fade" data-lo="solid" data-hi="ghostly"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" data-pane="poster">
+        <section>
+          <header class="sec"><span>A</span><h2>Grammar</h2></header>
+          <div class="seg" data-bind="sys.grammar" data-options="cluster:Cluster,grid:Grid,orbit:Orbit,flow:Flow"></div>
+          <div class="field" data-bind="sys.focus" data-label="Focus" data-lo="central" data-hi="distributed"></div>
+          <div class="field" data-bind="sys.hierarchy" data-label="Hierarchy" data-lo="equal" data-hi="varied"></div>
+          <div class="field" data-bind="sys.spread" data-label="Spread" data-lo="tight" data-hi="open"></div>
+          <div class="field" data-bind="sys.sync" data-label="Order" data-lo="wild" data-hi="precise"></div>
+        </section>
+        <section>
+          <header class="sec"><span>B</span><h2>Palette</h2></header>
+          <div class="palettes" id="palettes"></div>
+        </section>
+        <section>
+          <header class="sec"><span>C</span><h2>Effects</h2></header>
+          <p class="hint first">Resting levels, a rule can push any of them with the body</p>
+          <div class="field" data-bind="fx.trail" data-label="Trails" data-lo="clean" data-hi="long"></div>
+          <div class="field" data-bind="fx.slice" data-label="Slice" data-lo="whole" data-hi="cut"></div>
+          <div class="field" data-bind="fx.wave" data-label="Wave" data-lo="flat" data-hi="rolling"></div>
+          <div class="field" data-bind="fx.split" data-label="Split" data-lo="aligned" data-hi="apart"></div>
+          <div class="field" data-bind="fx.mosaic" data-label="Mosaic" data-lo="fine" data-hi="coarse"></div>
+          <div class="field" data-bind="fx.grain" data-label="Grain" data-lo="clean" data-hi="rough"></div>
+          <div class="field" data-bind="sys.tempo" data-label="Clock tempo" data-lo="slow" data-hi="fast"></div>
+        </section>
+        <section>
+          <header class="sec"><span>D</span><h2>File</h2></header>
+          <div class="lab first">Start from</div>
+          <div class="seg" id="starterSeg">
+            <button data-v="flex">Flex</button>
+            <button data-v="signal">Hello</button>
+            <button data-v="blank">Blank</button>
+          </div>
+          <div class="togs">
+            <button class="btn" id="jsonBtn">Save JSON</button>
+            <label class="btn file">Load JSON<input type="file" id="jsonInput" accept="application/json,.json" /></label>
+          </div>
+          <div class="lab">Keys</div>
+          <dl class="keys">
+            <dt>Space</dt><dd>Design or Perform</dd>
+            <dt>P</dt><dd>Pause or play</dd>
+            <dt>R</dt><dd>Record a video, again to stop</dd>
+            <dt>M</dt><dd>Mutate the layout</dd>
+            <dt>Ctrl Z</dt><dd>Undo, with Shift to redo</dd>
+            <dt>Arrows</dt><dd>Nudge the selection</dd>
+            <dt>Delete</dt><dd>Remove point or element</dd>
+          </dl>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <div class="job hidden" id="job"><span id="jobLabel"></span><i><b id="jobBar"></b></i><button class="mini" id="jobStop">Stop</button></div>
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="js/core.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/sense.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

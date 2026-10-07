@@ -1,0 +1,25 @@
+FLEX CODE LIVING IDENTITY V5
+Interactive media
+Jingyang Liu, Ph.D., XJTLU Design School
+
+QUICK START
+-----------
+Mac: double click start.command (you may need to allow it in Privacy and Security),
+or open Terminal here and run: python3 serve.py
+
+Windows: double click start.bat,
+or open PowerShell here and run: py serve.py
+
+Open the Local address the terminal prints, for example http://127.0.0.1:8080
+
+The camera only works on a localhost or https address.
+The trackers are fetched from the web the first time they are used, so stay connected.
+
+FIRST FIVE MINUTES
+------------------
+1. It opens with your pointer playing a hand: move over the sensor view, press to pinch, and watch the meters and the poster
+2. Click Camera, allow it, and try the same with your own hand
+3. On the right, click another suggestion, for example Face type, and use your face
+4. Press the plus beside any signal to make your own rule, then choose what it drives
+5. Press Space to Perform, and R to record a video of it
+6. Bottom right: choose Camera and poster to save both scenes side by side
