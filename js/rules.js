@@ -142,6 +142,7 @@
     const el = LI.byId(t);
     return el ? [el] : [];
   };
+  LI.targetsOf = targetsOf;
   LI.targetLabel = t => {
     if (t === 'poster') return 'Poster';
     const g = LI.GROUP_TARGETS.find(x => x[0] === t);
@@ -361,7 +362,9 @@
   LI.applyRecipe = id => {
     const rec = LI.RECIPES.find(r => r.id === id), S = LI.cur;
     if (!rec) return null;
-    const texts = S.elements.filter(e => e.type === 'text'), shapes = S.elements.filter(e => e.type !== 'text');
+    // roles go by the order elements were made, so restacking the layers does not reshuffle a suggestion
+    const made = S.elements.slice().sort((p, q) => p.num - q.num);
+    const texts = made.filter(e => e.type === 'text'), shapes = made.filter(e => e.type !== 'text');
     const accents = shapes.filter(e => e.role === 'accent'), bodies = shapes.filter(e => e.role !== 'accent');
     const pick = (list, i, fallback) => list.length ? list[((i % list.length) + list.length) % list.length].id : fallback;
     const f = {

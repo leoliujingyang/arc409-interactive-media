@@ -103,6 +103,14 @@ Copies of an element replay what the first copy did a moment earlier. Give a sha
 
 Elements, shapes with draggable points, type with rules and gradients, palettes, grammar, undo and redo all work as in V4.
 
+## Layers and names
+
+The list in the Elements tab is the stack of the poster: the top of the list is the front. Select an element and use **To front**, **Forward**, **Backward** or **To back** under the list, or the keys `]` and `[` (with Shift to go all the way). Changing the order never moves an element and never changes which element a rule drives.
+
+Every element has a name of its own. A new one is named after what it is (Circle, Circle 2, or the first line of a text), and the name follows along until you type your own, in the field above the Form tab or by double clicking the name in the list. That name is what a rule shows as its target. On the poster the name appears beside the outline of whatever you select or point at, and opening a rule, or resting the pointer on one, outlines and names the elements it drives.
+
+Posters saved before this version open looking the same: pictures at the back, shapes over them, type in front.
+
 ## Saving
 
 Bottom right of the stage. The first menu chooses what goes into the picture:

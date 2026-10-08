@@ -105,7 +105,8 @@
 
   // Rest pose of every element for one medium: grammar, then the medium treatment, then manual nudges.
   LI.layout = function (w, h, v) {
-    const S = LI.cur, els = S.elements, n = els.length;
+    // the grammar places elements in the order they were made, so restacking them never moves them
+    const S = LI.cur, real = S.elements, els = real.slice().sort((p, q) => p.num - q.num), n = els.length;
     if (!n) return [];
     const minD = Math.min(w, h), aspect = w / h, seed = v.seed, H = k => hash(k, seed);
     const focus = clamp(S.focus + v.dFocus, 0, 1), spreadN = clamp(S.spread + v.dSpread, 0, 1), hier = clamp(S.hierarchy + v.dHier, 0, 1);
@@ -223,7 +224,7 @@
         pts.forEach(p => { p.x = cx + (p.x - px) * Z; p.y = cy + (p.y - py) * Z; p.size *= Z; p.maxW *= Z; p.zoom = Z; });
       }
     }
-    return pts;
+    return real.map(el => pts[els.indexOf(el)]);
   };
 
   // offsets of every drawn copy relative to the element's rest position
@@ -358,8 +359,8 @@
         c.translate(w / 2, h / 2); c.rotate(live.tilt * Math.PI / 180); c.scale(live.zoom, live.zoom); c.translate(-w / 2, -h / 2);
       }
       const items = LI.evalScene(w, h, t, opts);
-      const order = { image: 0, shape: 1, text: 2 };
-      items.slice().sort((p, q) => order[p.el.type] - order[q.el.type] || p.i - q.i || q.k - p.k).forEach(it => LI.drawItem(c, it, items.seed));
+      // the element list is the stacking order: later ones are drawn over earlier ones
+      items.slice().sort((p, q) => p.i - q.i || q.k - p.k).forEach(it => LI.drawItem(c, it, items.seed));
       c.restore();
       return items;
     });

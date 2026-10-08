@@ -16,7 +16,6 @@
   let canvas, ctx;
   const primary = id => rt.items.find(it => it.el.id === id && it.k === 0) || null;
   const near = (h, p, r) => Math.hypot(h.x - p.x, h.y - p.y) <= r;
-  const drawOrder = { image: 0, shape: 1, text: 2 };
 
   function pos(ev) {
     const r = canvas.getBoundingClientRect();
@@ -24,7 +23,7 @@
   }
 
   function pick(p) {
-    const sorted = rt.items.slice().sort((a, b) => drawOrder[a.el.type] - drawOrder[b.el.type] || a.i - b.i || b.k - a.k);
+    const sorted = rt.items.slice().sort((a, b) => a.i - b.i || b.k - a.k);
     for (let j = sorted.length - 1; j >= 0; j--) {
       if (sorted[j].op > .02 && LI.hitItem(sorted[j], p.x, p.y, rt.items.seed, 4 * rt.px)) return sorted[j];
     }
@@ -209,16 +208,40 @@
     ctx.restore();
   }
 
+  // a small label with the element's name, so it is clear which one an outline belongs to
+  function nameTag(it, k, name) {
+    const label = String(name || '').slice(0, 26);
+    if (!label) return;
+    const b = LI.itemBounds(it, rt.items.seed);
+    // it hangs on the highest corner, so it stays attached when the element is turned
+    const top = [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]].map(([x, y]) => LI.toWorld(it, x, y))
+      .sort((p, q) => Math.abs(p.y - q.y) > k ? p.y - q.y : p.x - q.x)[0];
+    ctx.save();
+    ctx.font = `600 ${10 * k}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+    const w = ctx.measureText(label).width + 10 * k, h = 15 * k;
+    const x = clamp(top.x - k, 2 * k, Math.max(2 * k, rt.W - w - 2 * k)), y = clamp(top.y - h - 5 * k, 2 * k, Math.max(2 * k, rt.H - h - 2 * k));
+    ctx.fillStyle = ACCENT; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x + 5 * k, y + h / 2 + .5 * k);
+    ctx.restore();
+  }
+
   LI.drawChrome = function () {
     const k = rt.px = rt.W / (canvas.getBoundingClientRect().width || rt.W);
     if (S.mode === 'live') return;
     const sel = LI.selected(), it = sel && primary(sel.id);
+    // the elements an open rule drives are pointed out by name
+    (rt.focus || []).forEach(id => {
+      const f = (!sel || id !== sel.id) && id !== rt.hoverId && primary(id);
+      if (f) { outline(f, k, true); nameTag(f, k, f.el.name); }
+    });
     if (rt.hoverId && (!sel || rt.hoverId !== sel.id) && !rt.drag) {
       const hv = primary(rt.hoverId);
-      if (hv) outline(hv, k, true);
+      if (hv) { outline(hv, k, true); nameTag(hv, k, hv.el.name); }
     }
     if (!it) return;
     outline(it, k, false);
+    nameTag(it, k, sel.name);
     if (rt.hold < .7 && !rt.drag) return;
     handles(it).forEach(h => drawHandle(h, k, h.kind === 'vertex' && h.i === rt.vertex));
   };

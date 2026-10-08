@@ -127,13 +127,20 @@
             </label>
           </div>
           <div class="layers" id="layers"></div>
+          <div class="stack-row" id="stackRow" role="group" aria-label="Layer order">
+            <button data-a="front" title="Bring to the very front (Shift and ])">To front</button>
+            <button data-a="up" title="Bring forward one step (])">Forward</button>
+            <button data-a="down" title="Send backward one step ([)">Backward</button>
+            <button data-a="back" title="Send to the very back (Shift and [)">To back</button>
+          </div>
+          <p class="hint">The top of the list is the front of the poster, double click a name to change it</p>
           <p class="hint" id="noSel">Select an element on the poster or in the list to edit it</p>
         </div>
 
         <div id="sel" hidden>
           <header class="insp-head">
             <span class="num" id="selNum">01</span>
-            <input id="selName" aria-label="Element name" spellcheck="false" />
+            <input id="selName" aria-label="Element name" title="The name of this element, type to change it" placeholder="Name this element" spellcheck="false" />
             <button class="mini" id="dupBtn" title="Duplicate">Copy</button>
             <button class="mini" id="delBtn" title="Delete">Delete</button>
           </header>
@@ -262,6 +269,7 @@
             <dt>R</dt><dd>Record a video, again to stop</dd>
             <dt>M</dt><dd>Mutate the layout</dd>
             <dt>Ctrl Z</dt><dd>Undo, with Shift to redo</dd>
+            <dt>[ ]</dt><dd>Send backward, bring forward</dd>
             <dt>Arrows</dt><dd>Nudge the selection</dd>
             <dt>Delete</dt><dd>Remove point or element</dd>
           </dl>

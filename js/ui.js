@@ -162,10 +162,10 @@
       if (!b || !el || el.type === 'text') return;
       const g = LI.SHAPES[b.dataset.v].make();
       if (el.type === 'shape') {
-        if (LI.SHAPES[el.kind] && el.name === LI.SHAPES[el.kind].label || el.name === 'Custom') el.name = LI.SHAPES[b.dataset.v].label;
         Object.assign(el, g);
       } else { el.points = g.points; el.smooth = g.smooth; }
       el.kind = b.dataset.v;
+      if (el.type === 'shape') LI.autoName(el);
       rt.vertex = -1;
       changed(); refresh();
     });
@@ -314,6 +314,7 @@
     const box = $('rules');
     box.innerHTML = '';
     ruleRows = [];
+    rt.focus = [];
     $('ruleCount').textContent = S.rules.length ? pad(S.rules.length) : '';
     if (!S.rules.length) box.innerHTML = '<p class="hint">No rules yet, pick a suggestion above or press the plus beside a signal</p>';
     S.rules.forEach(r => {
@@ -324,6 +325,11 @@
       card.innerHTML = `<button class="rule-head"><span class="rule-src"><i>${LI.GROUPS[src.group]}</i>${esc(src.label)}</span>` +
         `<span class="rule-eff"><b>${P.label}</b><em>${esc(LI.targetLabel(r.target))}</em><u>${range}</u></span><span class="rule-meter"><b></b></span></button>`;
       card.querySelector('.rule-head').addEventListener('click', () => { S.selectedRule = open ? null : r.id; refresh(); });
+      // hovering a rule, or opening it, points out on the poster which elements it drives
+      const ids = LI.targetsOf(r.target).map(e => e.id);
+      if (open && pane === 'rules') rt.focus = ids;
+      card.addEventListener('mouseenter', () => { rt.focus = ids; });
+      card.addEventListener('mouseleave', () => { const o = S.rules.find(x => x.id === S.selectedRule); rt.focus = o ? LI.targetsOf(o.target).map(e => e.id) : []; });
       if (open) card.appendChild(ruleBody(r));
       box.appendChild(card);
       ruleRows.push({ id: r.id, meter: card.querySelector('.rule-meter b') });
@@ -332,18 +338,65 @@
 
   // ---------- elements and poster panes ----------
 
+  // the four layer buttons know when there is nowhere further to go
+  function paintStack() {
+    const el = LI.selected(), els = S.elements, i = el ? els.indexOf(el) : -1;
+    document.querySelectorAll('#stackRow button').forEach(b => {
+      const up = b.dataset.a === 'front' || b.dataset.a === 'up';
+      b.disabled = i < 0 || (up ? i === els.length - 1 : i === 0);
+    });
+  }
+
+  // type a new name straight into the list
+  function renameInList(el) {
+    const row = document.querySelector(`#layers .layer[data-id="${el.id}"]`);
+    if (!row) return;
+    const input = document.createElement('input');
+    input.className = 'layer-edit';
+    input.value = el.name; input.spellcheck = false;
+    input.setAttribute('aria-label', 'Element name');
+    row.replaceWith(input);
+    input.focus(); input.select();
+    let done = false;
+    const finish = keep => {
+      if (done) return;
+      done = true;
+      const v = input.value.trim();
+      if (keep && v !== el.name) {
+        el.named = !!v;
+        if (v) el.name = v; else LI.autoName(el);
+        changed();
+      }
+      refresh();
+    };
+    input.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') finish(true); else if (ev.key === 'Escape') finish(false); });
+    input.addEventListener('blur', () => finish(true));
+  }
+
+  let lastTap = { id: null, t: 0 };
   function paintLayers() {
     const box = $('layers'), els = S.elements;
     box.innerHTML = '';
+    paintStack();
     if (!els.length) { box.innerHTML = '<p class="hint">Nothing here yet, add a first element</p>'; return; }
-    els.forEach((el, i) => {
+    // the list reads like a stack of paper: whatever is in front comes first
+    els.slice().reverse().forEach((el, i) => {
       const on = el.id === S.selectedId, n = S.rules.filter(r => r.on && (r.target === el.id || r.target === '@all' || r.target === (el.type === 'text' ? '@text' : '@shape'))).length;
       const row = document.createElement('button');
       row.className = 'layer' + (on ? ' on' : '');
+      row.dataset.id = el.id;
+      row.title = el.name + ', double click to rename';
       row.innerHTML = `<span class="num">${pad(i + 1)}</span><canvas width="40" height="40"></canvas><span class="name">${esc(el.name)}</span>` +
         `<span class="tag">${n ? n + (n === 1 ? ' rule' : ' rules') : ''}</span><i class="src${n ? ' live' : ''}"></i>`;
       LI.drawGlyph(row.querySelector('canvas').getContext('2d'), el, 20, 20, 26, on ? '#ffffff' : '#0c0c0c');
-      row.addEventListener('click', () => { S.selectedId = el.id; rt.vertex = -1; refresh(); });
+      row.addEventListener('click', () => {
+        // the list is rebuilt on every selection, so a double click is counted here
+        const now = performance.now(), twice = lastTap.id === el.id && now - lastTap.t < 450;
+        lastTap = { id: el.id, t: twice ? 0 : now };
+        if (twice) { renameInList(el); return; }
+        if (S.selectedId === el.id) return;
+        S.selectedId = el.id; rt.vertex = -1; refresh();
+      });
       box.appendChild(row);
     });
   }
@@ -387,7 +440,7 @@
     $('sel').hidden = !el;
     if (!el) return;
     const isText = el.type === 'text';
-    $('selNum').textContent = pad(S.elements.indexOf(el) + 1);
+    $('selNum').textContent = pad(S.elements.length - S.elements.indexOf(el));
     if (document.activeElement !== $('selName')) $('selName').value = el.name;
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     document.querySelectorAll('.tab-body').forEach(b => { b.hidden = b.dataset.tab !== tab; });
@@ -531,6 +584,7 @@
 
   function addElement(el) {
     S.elements.push(el);
+    if (el.named) el.name = LI.freeName(el.name, el); else LI.autoName(el);
     S.selectedId = el.id;
     rt.vertex = -1;
     pane = 'elements'; tab = 'form';
@@ -728,13 +782,26 @@
       }).catch(() => toast('That file is not a Living Identity poster'));
     });
 
-    $('selName').addEventListener('input', ev => { const el = LI.selected(); if (el) { el.name = ev.target.value || cap(el.type); changed(); paintLayers(); } });
+    $('selName').addEventListener('input', ev => {
+      const el = LI.selected();
+      if (!el) return;
+      // typing a name makes it stick; clearing the field hands naming back to the element
+      el.named = !!ev.target.value.trim();
+      if (el.named) el.name = ev.target.value; else LI.autoName(el);
+      changed(); paintLayers();
+    });
+    $('selName').addEventListener('blur', ev => { const el = LI.selected(); if (el) { if (el.named) el.name = el.name.trim(); ev.target.value = el.name; paintLayers(); } });
+    $('selName').addEventListener('keydown', ev => { if (ev.key === 'Enter') ev.target.blur(); });
+    $('stackRow').addEventListener('click', ev => {
+      const b = ev.target.closest('button'), el = LI.selected();
+      if (b && el && LI.restack(el, b.dataset.a)) { changed(); refresh(); }
+    });
     $('textContent').addEventListener('input', ev => {
       const el = LI.selected();
       if (!el) return;
-      const auto = el.name === LI.nameOf(el.text);
       el.text = ev.target.value;
-      if (auto) { el.name = LI.nameOf(el.text); $('selName').value = el.name; }
+      LI.autoName(el);
+      $('selName').value = el.name;
       changed(); paintLayers();
     });
     $('dupBtn').addEventListener('click', () => { const el = LI.selected(); if (el) addElement(LI.duplicate(el)); });
@@ -776,7 +843,10 @@
       else if (low === 'm') doMutate();
       else if (low === 'r') save('video');
       else if (tag === 'INPUT') return;
-      else if (ev.key === 'Delete' || ev.key === 'Backspace') {
+      else if ((ev.code === 'BracketRight' || ev.code === 'BracketLeft') && el) {
+        const how = ev.code === 'BracketRight' ? (ev.shiftKey ? 'front' : 'up') : (ev.shiftKey ? 'back' : 'down');
+        if (LI.restack(el, how)) { changed(); refresh(); }
+      } else if (ev.key === 'Delete' || ev.key === 'Backspace') {
         if (LI.removeVertex()) { changed(); refresh(); } else removeSelected();
       } else if (ev.key.startsWith('Arrow') && el) {
         ev.preventDefault();

@@ -98,6 +98,8 @@
   LI.fixEl = el => {
     Object.keys(STYLE).forEach(k => { if (el[k] == null) el[k] = STYLE[k]; });
     el.echo = Object.assign(LI.defaultEcho(), el.echo);
+    // a name counts as given by hand unless it is still an automatic one
+    if (el.named == null) el.named = el.name !== LI.plainName(el) && !(el.type === 'shape' && (el.name === 'Custom' || Object.keys(LI.SHAPES).some(k => LI.SHAPES[k].label === el.name)));
     delete el.motion;
     return el;
   };
@@ -142,6 +144,45 @@
     });
   };
   LI.nameOf = text => (String(text).split('\n')[0] || 'Text').slice(0, 22);
+
+  // ---------- names and stacking ----------
+
+  const TYPE_RANK = { image: 0, shape: 1, text: 2 };
+  // the stacking older posters had without saying so: pictures at the back, type in front
+  LI.settle = els => els.map((el, i) => [el, i]).sort((p, q) => TYPE_RANK[p[0].type] - TYPE_RANK[q[0].type] || p[1] - q[1]).map(p => p[0]);
+
+  // what an element is called until someone names it
+  LI.plainName = el => el.type === 'text' ? LI.nameOf(el.text) : el.type === 'image' ? 'Image' : (LI.SHAPES[el.kind] || { label: 'Shape' }).label;
+  const nextFree = (base, taken) => {
+    if (!taken.has(base)) return base;
+    const m = /^(.*\S) (\d{1,3})$/.exec(base), stem = m ? m[1] : base;
+    let n = m ? +m[2] + 1 : 2;
+    while (taken.has(stem + ' ' + n)) n++;
+    return stem + ' ' + n;
+  };
+  // a name nothing else on the poster is using: Circle, Circle 2, Circle 3
+  LI.freeName = (base, el) => nextFree(base, new Set(LI.cur.elements.filter(e => e !== el).map(e => e.name)));
+  // an element keeps its automatic name up to date until someone names it by hand
+  LI.autoName = el => { if (!el.named) el.name = LI.freeName(LI.plainName(el), el); };
+  // two elements that were never named cannot share a name; the one made first keeps it
+  LI.nameAll = els => {
+    const taken = new Set(els.filter(e => e.named).map(e => e.name));
+    els.slice().sort((p, q) => p.num - q.num).forEach(el => {
+      if (!el.named) el.name = nextFree(el.name || LI.plainName(el), taken);
+      taken.add(el.name);
+    });
+  };
+
+  // The list of elements is the stacking order, last on top. how: front, back, up or down.
+  LI.restack = (el, how) => {
+    const els = LI.cur.elements, i = els.indexOf(el);
+    if (i < 0) return false;
+    const to = how === 'front' ? els.length - 1 : how === 'back' ? 0 : how === 'up' ? i + 1 : i - 1;
+    if (to === i || to < 0 || to >= els.length) return false;
+    els.splice(i, 1);
+    els.splice(to, 0, el);
+    return true;
+  };
 
   LI.palette = () => LI.PALETTES[state.paletteIndex] || LI.PALETTES[0];
   const colourOf = v => typeof v === 'number' ? LI.palette().colors[v] : v;
@@ -221,7 +262,8 @@
     const s = (LI.STARTERS[name] || LI.STARTERS.flex)();
     state.grammar = s.grammar;
     state.paletteIndex = s.paletteIndex;
-    state.elements = s.elements;
+    state.elements = LI.settle(s.elements);
+    LI.nameAll(state.elements);
     const f = LI.FORMAT, homes = LI.layout(f.w, f.h, state.layout);
     state.elements.forEach((el, i) => {
       const to = s.place[el.id];
@@ -245,7 +287,7 @@
   const SYS = ['grammar', 'focus', 'hierarchy', 'spread', 'tempo', 'sync', 'paletteIndex', 'mirror'];
 
   LI.serialize = () => ({
-    app: 'Living Identity', version: '5.0', generatedAt: new Date().toISOString(),
+    app: 'Living Identity', version: '5.1', generatedAt: new Date().toISOString(),
     system: { grammar: state.grammar, focus: state.focus, hierarchy: state.hierarchy, spread: state.spread, tempo: state.tempo, sync: state.sync, mirror: state.mirror },
     effects: plain(state.fx),
     palette: Object.assign({ index: state.paletteIndex }, LI.palette()),
@@ -277,6 +319,8 @@
       }
       return el;
     }).filter(el => el.type === 'text' || Array.isArray(el.points));
+    // files from before layers existed drew type over shapes over pictures: keep that look
+    if (!(parseFloat(data.version) >= 5.1)) { state.elements = LI.settle(state.elements); LI.nameAll(state.elements); }
     state.rules = (Array.isArray(data.rules) ? data.rules : []).filter(r => r && LI.PROPS[r.prop]).map(r => Object.assign(LI.newRule(r.source, r.target, r.prop), r));
     nextNum = state.elements.reduce((m, el) => Math.max(m, el.num || 0), 0) + 1;
     nextRule = state.rules.reduce((m, r) => Math.max(m, +String(r.id).slice(1) || 0), 0) + 1;
@@ -305,6 +349,7 @@
   LI.duplicate = el => {
     const num = nextNum++, copy = cloneEl(el);
     Object.assign(copy, { id: 'e' + num, num });
+    copy.name = LI.freeName(el.name, copy);
     const n = state.layout.nudge[el.id] || { x: 0, y: 0 };
     state.layout.nudge[copy.id] = { x: n.x + .04, y: n.y + .04 };
     return copy;

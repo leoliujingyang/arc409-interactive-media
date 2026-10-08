@@ -536,3 +536,14 @@ body.live .sense-view { position: fixed; left: 22px; bottom: 54px; width: 232px;
 
 @media (max-width: 1240px) { :root { --left: 290px; --right: 316px; } .bar-mid span { display: none; } }
 @media (max-width: 980px) { .panel.right > * { min-width: 0; } body.live .sense-view { display: none; } }
+
+/* ---------- layer order and names ---------- */
+
+.stack-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 8px; border: 1px solid var(--ink); }
+.stack-row button { border: 0; border-right: 1px solid var(--ink); background: transparent; height: 26px; padding: 0 2px; overflow: hidden; font-size: 8.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; transition: background .12s, color .12s; }
+.stack-row button:last-child { border-right: 0; }
+.stack-row button:hover:not(:disabled) { background: var(--ink); color: #fff; }
+.stack-row button:disabled { color: #b9b8b2; cursor: default; }
+.layer-edit { display: block; width: 100%; height: 34px; border: 2px solid var(--accent); border-radius: 0; padding: 0 8px; font-size: 12px; font-weight: 600; background: #fff; outline: 0; }
+.insp-head input { border-color: var(--hair); }
+.insp-head input:hover, .insp-head input:focus { border-color: var(--ink); background: #fff; }
